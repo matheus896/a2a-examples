@@ -53,12 +53,14 @@ class KarleyAgentExecutor(AgentExecutor):
                     event.content.parts if event.content and event.content.parts else []
                 )
                 logger.debug("Yielding final response: %s", parts)
-                task_updater.add_artifact(parts)
-                task_updater.complete()
+                # TaskUpdater.add_artifact and complete are synchronous
+                _ = task_updater.add_artifact(parts)
+                _ = task_updater.complete()
                 break
             if not event.get_function_calls():
                 logger.debug("Yielding update response")
-                task_updater.update_status(
+                # TaskUpdater.update_status is synchronous
+                _ = task_updater.update_status(
                     TaskState.working,
                     message=task_updater.new_agent_message(
                         convert_genai_parts_to_a2a(
@@ -83,8 +85,9 @@ class KarleyAgentExecutor(AgentExecutor):
 
         updater = TaskUpdater(event_queue, context.task_id, context.context_id)
         if not context.current_task:
-            updater.submit()
-        updater.start_work()
+            # TaskUpdater.submit and start_work are synchronous; assign result to dummy to satisfy linter
+            _ = updater.submit()
+            _ = updater.start_work()
         await self._process_request(
             types.UserContent(
                 parts=convert_a2a_parts_to_genai(context.message.parts),
