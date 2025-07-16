@@ -26,15 +26,10 @@ GOOGLE_API_KEY="your_api_key_here"
 
 You will need to run each agent in a separate terminal window. The first time you run these commands, `uv` will create a virtual environment and install all necessary dependencies before starting the agent.
 
-Teste: 
+Teste messages: 
 
 How many friends I do have available?
-what time is everyone available tomorrow for pickleball?
-
-Com base na análise do rastreamento de pilha e no código fornecido, o erro asyncio.queues.QueueEmpty: Queue is closed. ocorre porque a fila de eventos está sendo fechada prematuramente. Isso acontece porque o método execute em agent_executor.py sai imediatamente após o loop async for, não esperando que todos os eventos que ele enfileirou (através do TaskUpdater) sejam processados.
-
-A solução é adicionar um await event_queue.join() no final do método execute. Isso garantirá que o método aguarde até que todos os eventos na fila tenham sido processados antes de retornar, evitando assim que a fila seja fechada enquanto ainda há consumidores tentando retirar itens dela.
-
+What time is everyone available tomorrow for pickleball?
 
 ### Terminal 1: Run Kaitlynn Agent
 ```bash

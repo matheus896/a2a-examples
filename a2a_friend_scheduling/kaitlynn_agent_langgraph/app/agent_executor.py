@@ -1,6 +1,7 @@
 import logging
 import sys
 import os
+from typing import List, Optional
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -43,7 +44,12 @@ class KaitlynAgentExecutor(AgentExecutor):
         await updater.start_work()
 
         query = context.get_user_input()
+
+        final_parts: Optional[List[Part]] = None
+        task_completed = False
+
         try:
+            # 1. Iterar sobre todo o stream sem interrupção
             async for item in self.agent.stream(query, context.context_id):
                 is_task_complete = item["is_task_complete"]
                 require_user_input = item["require_user_input"]
@@ -59,18 +65,21 @@ class KaitlynAgentExecutor(AgentExecutor):
                         TaskState.input_required,
                         message=updater.new_agent_message(parts),
                     )
-                    break
-                else:
-                    await updater.add_artifact(
-                        parts,
-                        name="scheduling_result",
-                    )
-                    await updater.complete()
-                    break
+                else: # A tarefa está completa, capture o resultado final
+                    final_parts = parts
+                    task_completed = True
 
         except Exception as e:
             logger.error(f"An error occurred while streaming the response: {e}")
-            raise ServerError(error=InternalError()) from e
+            # CORREÇÃO: Levante ServerError em vez de chamar um método inexistente.
+            raise ServerError(error=InternalError(message=str(e))) from e
+
+        if task_completed and final_parts:
+            await updater.add_artifact(
+                final_parts,
+                name="scheduling_result",
+            )
+            await updater.complete()
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         raise ServerError(error=UnsupportedOperationError())
